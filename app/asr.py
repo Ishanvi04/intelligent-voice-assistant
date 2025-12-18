@@ -1,12 +1,10 @@
 import whisper
 
-def transcribe_audio(filepath="samples/output.wav"):
-    print("Loading model...")
-    model = whisper.load_model("base")
+model = whisper.load_model("base")
 
-    print("Transcribing...")
+def transcribe_audio(filepath="samples/output.wav"):
     result = model.transcribe(filepath)
-    print("Text:", result["text"])
+    return result["text"]
 
 if __name__ == "__main__":
-    transcribe_audio()
+    print(transcribe_audio())
