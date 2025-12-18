@@ -24,3 +24,14 @@ def tell_joke():
         "Why was the Python developer sad? Because he had too many bugs."
     ]
     return random.choice(jokes)
+
+def tell_quote():
+    quotes = [
+        "Believe in yourself and all that you are.",
+        "Success is not final, failure is not fatal.",
+        "Discipline is the bridge between goals and accomplishment.",
+        "Dream big. Start small. Act now.",
+        "Your limitation is only your imagination."
+    ]
+    return random.choice(quotes)
+

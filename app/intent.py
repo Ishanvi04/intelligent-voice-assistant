@@ -11,13 +11,21 @@ KNOWN_SITES = {
 def detect_intent(text):
     text = text.lower().strip()
 
-    # Direct site names (no "open")
+    if "your name" in text or "who are you" in text:
+        return "assistant_name", None
+
+    if any(word in text for word in ["hello", "hi", "hey"]):
+        return "greeting", None
+
+    if any(word in text for word in ["quote", "motivate", "motivation", "inspire"]):
+        return "tell_quote", None
+
     for site in KNOWN_SITES:
         if site in text:
             return "open_website", (KNOWN_SITES[site],)
 
     patterns = {
-        "get_time": [r"\btime\b"],
+        "get_time": [r"\btime\b", r"\bdate\b"],
         "create_note": [r"note (.+)", r"remember (.+)"],
         "tell_joke": [r"joke", r"make me laugh"]
     }
