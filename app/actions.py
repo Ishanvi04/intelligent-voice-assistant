@@ -1,6 +1,22 @@
 import datetime
 import webbrowser
 import random
+import subprocess
+
+def get_battery():
+    try:
+        output = subprocess.check_output(
+            ["pmset", "-g", "batt"]
+        ).decode()
+
+        # Example output:
+        # 'Now drawing from 'Battery Power'\n -InternalBattery-0 (id=1234567) 85%; discharging; 3:45 remaining\n'
+
+        percent = output.split("\t")[-1].split(";")[0]
+        return f"Your battery is at {percent}."
+
+    except Exception:
+        return "Sorry, I couldn't check the battery level."
 
 def get_time():
     now = datetime.datetime.now()

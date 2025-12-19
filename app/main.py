@@ -1,5 +1,7 @@
-from emotion import detect_emotion, get_emotion_response
 import time
+import context
+from sounds import play_start_sound, play_stop_sound
+from emotion import detect_emotion, get_emotion_response
 from recorder import record_audio
 from asr import transcribe_audio
 from intent import detect_intent
@@ -9,7 +11,8 @@ from tts import speak
 ASSISTANT_NAME = "lana"
 WAKE_WORDS = ["lana", "laana", "lanna", "lanaah"]
 ACTIVE_TIMEOUT = 20        # seconds
-SPEAK_COOLDOWN = 1.2       # seconds (prevents hearing itself)
+RECORD_DELAY = 1.0        # prevents TTS + mic overlap
+
 
 def run():
     print(f"{ASSISTANT_NAME.capitalize()} is running. Say '{ASSISTANT_NAME}' to wake me up.")
@@ -20,23 +23,30 @@ def run():
     try:
         while True:
             # -------- PASSIVE LISTENING --------
+            time.sleep(RECORD_DELAY)
+            play_start_sound()
             record_audio()
+
             text = transcribe_audio().lower().strip()
+            if not text:
+                continue
+
             print("Heard:", text)
 
             # -------- EXIT ANYTIME --------
             if any(word in text for word in ["exit", "bye", "goodbye", "quit"]):
+                play_stop_sound()
                 speak("Goodbye. Shutting down.")
                 print("Assistant stopped.")
                 break
 
-            # -------- SLEEP MODE --------
+            # -------- WAKE MODE --------
             if not active:
                 if any(w in text for w in WAKE_WORDS):
                     active = True
                     last_active_time = time.time()
                     speak("Yes?")
-                    time.sleep(SPEAK_COOLDOWN)
+                    time.sleep(RECORD_DELAY)
                     print("Activated")
                 continue
 
@@ -49,18 +59,44 @@ def run():
             # -------- COMMAND MODE --------
             command = text.replace(ASSISTANT_NAME, "").strip()
             print("Command:", command)
-           
+
+            # -------- EMOTION DETECTION --------
             emotion = detect_emotion(command)
             if emotion:
-               response = get_emotion_response(emotion)
-               print("Emotion detected:", emotion)
-               speak(response)
-               time.sleep(1)
-               continue
+                response = get_emotion_response(emotion)
+                print("Emotion detected:", emotion)
+                speak(response)
+                time.sleep(RECORD_DELAY)
+                last_active_time = time.time()
+                continue
 
-
+            # -------- INTENT DETECTION --------
             intent, params = detect_intent(command)
 
+            # ---- FOLLOW-UP QUESTIONS ----
+            if intent == "open_website" and not params:
+                context.pending_intent = "open_website"
+                speak("What would you like me to open?")
+                continue
+
+            if intent == "create_note" and not params:
+                context.pending_intent = "create_note"
+                speak("What should I write in the note?")
+                continue
+
+            # ---- HANDLE FOLLOW-UP ANSWER ----
+            if context.pending_intent:
+                if context.pending_intent == "open_website":
+                    response = actions.open_website(command)
+                elif context.pending_intent == "create_note":
+                    response = actions.create_note(command)
+
+                context.reset()
+                speak(response)
+                last_active_time = time.time()
+                continue
+
+            # ---- NORMAL INTENTS ----
             if intent == "get_time":
                 response = actions.get_time()
 
@@ -69,6 +105,9 @@ def run():
 
             elif intent == "create_note":
                 response = actions.create_note(params[0])
+
+            elif intent == "get_battery":
+                response = actions.get_battery()
 
             elif intent == "tell_joke":
                 response = actions.tell_joke()
@@ -85,15 +124,16 @@ def run():
             else:
                 response = "Sorry, I didn't understand that."
 
-            speak(response)
             print("Assistant:", response)
-
-            time.sleep(SPEAK_COOLDOWN)
+            speak(response)
+            time.sleep(RECORD_DELAY)
             last_active_time = time.time()
 
     except KeyboardInterrupt:
+        play_stop_sound()
         print("\nAssistant stopped manually.")
         speak("Goodbye.")
+
 
 if __name__ == "__main__":
     run()
