@@ -12,6 +12,11 @@ ASSISTANT_NAME = "lana"
 WAKE_WORDS = ["lana", "laana", "lanna", "lanaah"]
 ACTIVE_TIMEOUT = 20        # seconds
 RECORD_DELAY = 1.0        # prevents TTS + mic overlap
+# ---------- Terminal Colors ----------
+RESET = "\033[0m"
+RED = "\033[91m"
+GREEN = "\033[92m"
+PINK = "\033[95m"
 
 
 def run():
@@ -32,7 +37,7 @@ def run():
             if not text:
                 continue
 
-            print("Heard:", text)
+            print(f"{RED}HEARD:{RESET} {text}")
 
             # -------- EXIT ANYTIME --------
             if any(word in text for word in ["exit", "bye", "goodbye", "quit"]):
@@ -48,7 +53,8 @@ def run():
                     last_active_time = time.time()
                     speak("Yes?")
                     time.sleep(RECORD_DELAY)
-                    print("Activated")
+                    print(f"{PINK}LANA:{RESET} Activated")
+
                 continue
 
             # -------- AUTO SLEEP --------
@@ -59,7 +65,8 @@ def run():
 
             # -------- COMMAND MODE --------
             command = text.replace(ASSISTANT_NAME, "").strip()
-            print("Command:", command)
+            print(f"{GREEN}YOU:{RESET} {command}")
+
 
             # -------- EMOTION DETECTION --------
             emotion = detect_emotion(command)
@@ -128,7 +135,7 @@ def run():
             else:
                 response = "Sorry, I didn't understand that."
 
-            print("Assistant:", response)
+            print(f"{PINK}LANA:{RESET} {response}")
             speak(response)
             time.sleep(RECORD_DELAY)
             last_active_time = time.time()
