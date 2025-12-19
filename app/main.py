@@ -16,7 +16,8 @@ RECORD_DELAY = 1.0        # prevents TTS + mic overlap
 
 def run():
     print(f"{ASSISTANT_NAME.capitalize()} is running. Say '{ASSISTANT_NAME}' to wake me up.")
-
+    speak(f"Say {ASSISTANT_NAME} to wake me up.")
+    time.sleep(1)
     active = False
     last_active_time = 0
 
@@ -99,6 +100,9 @@ def run():
             # ---- NORMAL INTENTS ----
             if intent == "get_time":
                 response = actions.get_time()
+            elif intent == "open_and_search":
+                response = actions.open_and_search(command)
+
 
             elif intent == "open_website":
                 response = actions.open_website(params[0])

@@ -11,6 +11,12 @@ KNOWN_SITES = {
 def detect_intent(text):
     text = text.lower().strip()
     # System info
+
+
+     # Multi-command: open X and search Y
+    if "open" in text and "search" in text:
+        return "open_and_search", None
+
     if any(word in text for word in ["battery", "charge", "power level"]):
         return "get_battery", None
 

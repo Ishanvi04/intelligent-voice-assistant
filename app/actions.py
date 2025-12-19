@@ -1,3 +1,5 @@
+import urllib.parse
+import time
 import datetime
 import webbrowser
 import random
@@ -28,6 +30,30 @@ def open_website(site):
     webbrowser.open(site)
     return f"Opening {site}"
 
+def open_and_search(command):
+    command = command.lower()
+
+    if "youtube" in command:
+        site = "https://www.youtube.com"
+        search_base = "https://www.youtube.com/results?search_query="
+    elif "google" in command:
+        site = "https://www.google.com"
+        search_base = "https://www.google.com/search?q="
+    else:
+        return "Sorry, I don't know where to search."
+
+    # Extract search query
+    if "search" in command:
+        query = command.split("search", 1)[1].strip()
+        if not query:
+            return "What should I search for?"
+
+        webbrowser.open(site)
+        time.sleep(1)
+        webbrowser.open(search_base + urllib.parse.quote(query))
+        return f"Searching {query}."
+
+    return "Sorry, I couldn't complete that."
 def create_note(text):
     with open("notes.txt", "a") as f:
         f.write(text + "\n")
