@@ -1,5 +1,6 @@
 import time
 import context
+from diagnostics import run_diagnostics
 from logger import log_message
 from sounds import play_start_sound, play_stop_sound
 from emotion import detect_emotion, get_emotion_response
@@ -11,8 +12,8 @@ from tts import speak
 
 ASSISTANT_NAME = "lana"
 WAKE_WORDS = ["lana", "laana", "lanna", "lanaah"]
-ACTIVE_TIMEOUT = 20        # seconds
-RECORD_DELAY = 1.0        # prevents TTS + mic overlap
+ACTIVE_TIMEOUT = 20
+RECORD_DELAY = 1.0
 
 # ---------- Terminal Colors ----------
 RESET = "\033[0m"
@@ -31,7 +32,7 @@ def run():
 
     try:
         while True:
-            response = None  # 🔑 SAFETY
+            response = None
 
             # -------- PASSIVE LISTENING --------
             time.sleep(RECORD_DELAY)
@@ -63,7 +64,6 @@ def run():
                     print(f"{PINK}LANA:{RESET} Activated")
                     log_message("LANA", "Activated")
                     speak(response)
-                    time.sleep(RECORD_DELAY)
                 continue
 
             # -------- AUTO SLEEP --------
@@ -147,6 +147,26 @@ def run():
 
             elif intent == "greeting":
                 response = "Hello! How can I help you?"
+
+            elif intent == "diagnose":
+                response = "Running system diagnostics."
+                print(f"{PINK}LANA:{RESET} {response}")
+                log_message("LANA", response)
+                speak(response)
+
+                results, all_ok = run_diagnostics()
+                for msg in results:
+                    print(f"{PINK}LANA:{RESET} {msg}")
+                    log_message("LANA", msg)
+                    speak(msg)
+
+                final = "All systems are operational." if all_ok else "Some systems need attention."
+                print(f"{PINK}LANA:{RESET} {final}")
+                log_message("LANA", final)
+                speak(final)
+
+                last_active_time = time.time()
+                continue
 
             else:
                 response = "Sorry, I didn't understand that."
