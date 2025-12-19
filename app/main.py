@@ -1,3 +1,4 @@
+from emotion import detect_emotion, get_emotion_response
 import time
 from recorder import record_audio
 from asr import transcribe_audio
@@ -6,55 +7,58 @@ import actions
 from tts import speak
 
 ASSISTANT_NAME = "lana"
-WAKE_WORDS = ["lana", "laana", "lahna", "lanaah"]
+WAKE_WORDS = ["lana", "laana", "lanna", "lanaah"]
+ACTIVE_TIMEOUT = 20        # seconds
+SPEAK_COOLDOWN = 1.2       # seconds (prevents hearing itself)
 
 def run():
-    print(f"{ASSISTANT_NAME.capitalize()} is running. Say '{ASSISTANT_NAME}' to activate.")
-    active = False  # assistant state
+    print(f"{ASSISTANT_NAME.capitalize()} is running. Say '{ASSISTANT_NAME}' to wake me up.")
+
+    active = False
+    last_active_time = 0
 
     try:
         while True:
-            # -------- Passive listening --------
+            # -------- PASSIVE LISTENING --------
             record_audio()
             text = transcribe_audio().lower().strip()
             print("Heard:", text)
 
-            # Hard exit (shutdown app)
-            if any(word in text for word in ["shutdown app", "force exit"]):
-                speak("Shutting down. Goodbye.")
+            # -------- EXIT ANYTIME --------
+            if any(word in text for word in ["exit", "bye", "goodbye", "quit"]):
+                speak("Goodbye. Shutting down.")
+                print("Assistant stopped.")
                 break
 
-            # Wake up
-            if not active and any(w in text for w in WAKE_WORDS):
-                active = True
-                speak("Yes?")
-                time.sleep(0.6)
-                print("Activated")
-                continue
-
-            # Ignore everything if sleeping
+            # -------- SLEEP MODE --------
             if not active:
+                if any(w in text for w in WAKE_WORDS):
+                    active = True
+                    last_active_time = time.time()
+                    speak("Yes?")
+                    time.sleep(SPEAK_COOLDOWN)
+                    print("Activated")
                 continue
 
-            # -------- Command listening --------
-            record_audio()
-            command = transcribe_audio().lower().strip()
-            print("Command:", command)
-
-            # Fallback if command empty
-            if not command:
-                command = text
-
-            # Remove assistant name from command
-            command = command.replace(ASSISTANT_NAME, "").strip()
-
-            # Go back to sleep
-            if any(word in command for word in ["bye", "goodbye", "exit", "quit"]):
-                speak("Okay, going to sleep.")
+            # -------- AUTO SLEEP --------
+            if time.time() - last_active_time > ACTIVE_TIMEOUT:
                 active = False
+                print("Going to sleep.")
                 continue
 
-            # Detect intent
+            # -------- COMMAND MODE --------
+            command = text.replace(ASSISTANT_NAME, "").strip()
+            print("Command:", command)
+           
+            emotion = detect_emotion(command)
+            if emotion:
+               response = get_emotion_response(emotion)
+               print("Emotion detected:", emotion)
+               speak(response)
+               time.sleep(1)
+               continue
+
+
             intent, params = detect_intent(command)
 
             if intent == "get_time":
@@ -79,13 +83,17 @@ def run():
                 response = "Hello! How can I help you?"
 
             else:
-                response = "Sorry, I did not understand that."
+                response = "Sorry, I didn't understand that."
 
-            print("Assistant:", response)
             speak(response)
+            print("Assistant:", response)
+
+            time.sleep(SPEAK_COOLDOWN)
+            last_active_time = time.time()
 
     except KeyboardInterrupt:
         print("\nAssistant stopped manually.")
+        speak("Goodbye.")
 
 if __name__ == "__main__":
     run()
