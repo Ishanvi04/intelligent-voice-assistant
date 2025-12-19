@@ -1,5 +1,6 @@
 import time
 import context
+from logger import log_message
 from sounds import play_start_sound, play_stop_sound
 from emotion import detect_emotion, get_emotion_response
 from recorder import record_audio
@@ -12,6 +13,7 @@ ASSISTANT_NAME = "lana"
 WAKE_WORDS = ["lana", "laana", "lanna", "lanaah"]
 ACTIVE_TIMEOUT = 20        # seconds
 RECORD_DELAY = 1.0        # prevents TTS + mic overlap
+
 # ---------- Terminal Colors ----------
 RESET = "\033[0m"
 RED = "\033[91m"
@@ -23,11 +25,14 @@ def run():
     print(f"{ASSISTANT_NAME.capitalize()} is running. Say '{ASSISTANT_NAME}' to wake me up.")
     speak(f"Say {ASSISTANT_NAME} to wake me up.")
     time.sleep(1)
+
     active = False
     last_active_time = 0
 
     try:
         while True:
+            response = None  # 🔑 SAFETY
+
             # -------- PASSIVE LISTENING --------
             time.sleep(RECORD_DELAY)
             play_start_sound()
@@ -38,12 +43,15 @@ def run():
                 continue
 
             print(f"{RED}HEARD:{RESET} {text}")
+            log_message("YOU", text)
 
             # -------- EXIT ANYTIME --------
             if any(word in text for word in ["exit", "bye", "goodbye", "quit"]):
                 play_stop_sound()
-                speak("Goodbye. Shutting down.")
-                print("Assistant stopped.")
+                response = "Goodbye. Shutting down."
+                print(f"{PINK}LANA:{RESET} {response}")
+                log_message("LANA", response)
+                speak(response)
                 break
 
             # -------- WAKE MODE --------
@@ -51,30 +59,30 @@ def run():
                 if any(w in text for w in WAKE_WORDS):
                     active = True
                     last_active_time = time.time()
-                    speak("Yes?")
-                    time.sleep(RECORD_DELAY)
+                    response = "Yes?"
                     print(f"{PINK}LANA:{RESET} Activated")
-
+                    log_message("LANA", "Activated")
+                    speak(response)
+                    time.sleep(RECORD_DELAY)
                 continue
 
             # -------- AUTO SLEEP --------
             if time.time() - last_active_time > ACTIVE_TIMEOUT:
                 active = False
-                print("Going to sleep.")
+                log_message("SYSTEM", "Going to sleep")
                 continue
 
             # -------- COMMAND MODE --------
             command = text.replace(ASSISTANT_NAME, "").strip()
             print(f"{GREEN}YOU:{RESET} {command}")
 
-
             # -------- EMOTION DETECTION --------
             emotion = detect_emotion(command)
             if emotion:
                 response = get_emotion_response(emotion)
-                print("Emotion detected:", emotion)
+                print(f"{PINK}LANA:{RESET} {response}")
+                log_message("LANA", response)
                 speak(response)
-                time.sleep(RECORD_DELAY)
                 last_active_time = time.time()
                 continue
 
@@ -84,12 +92,18 @@ def run():
             # ---- FOLLOW-UP QUESTIONS ----
             if intent == "open_website" and not params:
                 context.pending_intent = "open_website"
-                speak("What would you like me to open?")
+                response = "What would you like me to open?"
+                print(f"{PINK}LANA:{RESET} {response}")
+                log_message("LANA", response)
+                speak(response)
                 continue
 
             if intent == "create_note" and not params:
                 context.pending_intent = "create_note"
-                speak("What should I write in the note?")
+                response = "What should I write in the note?"
+                print(f"{PINK}LANA:{RESET} {response}")
+                log_message("LANA", response)
+                speak(response)
                 continue
 
             # ---- HANDLE FOLLOW-UP ANSWER ----
@@ -100,6 +114,8 @@ def run():
                     response = actions.create_note(command)
 
                 context.reset()
+                print(f"{PINK}LANA:{RESET} {response}")
+                log_message("LANA", response)
                 speak(response)
                 last_active_time = time.time()
                 continue
@@ -107,9 +123,9 @@ def run():
             # ---- NORMAL INTENTS ----
             if intent == "get_time":
                 response = actions.get_time()
+
             elif intent == "open_and_search":
                 response = actions.open_and_search(command)
-
 
             elif intent == "open_website":
                 response = actions.open_website(params[0])
@@ -136,6 +152,7 @@ def run():
                 response = "Sorry, I didn't understand that."
 
             print(f"{PINK}LANA:{RESET} {response}")
+            log_message("LANA", response)
             speak(response)
             time.sleep(RECORD_DELAY)
             last_active_time = time.time()
