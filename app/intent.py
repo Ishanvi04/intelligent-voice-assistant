@@ -10,39 +10,40 @@ KNOWN_SITES = {
 
 def detect_intent(text):
     text = text.lower().strip()
-    # System info
 
+    # ---------- SELF DIAGNOSTICS ----------
+    if any(word in text for word in ["diagnose", "diagnostics", "check yourself"]):
+        return "diagnose", None
 
-     # Multi-command: open X and search Y
+    # ---------- MULTI-COMMAND ----------
     if "open" in text and "search" in text:
         return "open_and_search", None
 
+    # ---------- SYSTEM INFO ----------
     if any(word in text for word in ["battery", "charge", "power level"]):
         return "get_battery", None
 
+    # ---------- DATE (CHECK FIRST) ----------
+    if any(word in text for word in ["date", "today", "day"]):
+        return "get_date", None
+
+    # ---------- TIME ----------
+    if "time" in text:
+        return "get_time", None
+
     # ---------- IDENTITY ----------
-    if "your name" in text or "who are you" in text:
+    if any(phrase in text for phrase in ["your name", "who are you"]):
         return "assistant_name", None
 
     # ---------- GREETING ----------
     if any(word in text for word in ["hello", "hi", "hey"]):
         return "greeting", None
 
-    # ---------- QUOTES / MOTIVATION ----------
+    # ---------- QUOTES ----------
     if any(word in text for word in ["quote", "motivate", "motivation", "inspire"]):
         return "tell_quote", None
 
-    # ---------- SYSTEM INFO ----------
-    if "battery" in text:
-        return "battery", None
-
-    if "cpu" in text:
-        return "cpu", None
-
-    if "memory" in text or "ram" in text:
-        return "memory", None
-
-    # ---------- FOLLOW-UP (PARTIAL COMMANDS) ----------
+    # ---------- FOLLOW-UP COMMANDS ----------
     if text in ["open", "open something"]:
         return "open_website", None
 
@@ -54,11 +55,10 @@ def detect_intent(text):
         if site in text:
             return "open_website", (KNOWN_SITES[site],)
 
-    # ---------- REGEX PATTERNS ----------
+    # ---------- REGEX COMMANDS ----------
     patterns = {
-        "get_time": [r"\btime\b", r"\bdate\b"],
         "create_note": [r"note (.+)", r"remember (.+)"],
-        "tell_joke": [r"joke", r"make me laugh"]
+        "tell_joke": [r"\bjoke\b", r"make me laugh"]
     }
 
     for intent, rules in patterns.items():

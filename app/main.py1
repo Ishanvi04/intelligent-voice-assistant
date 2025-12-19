@@ -30,19 +30,6 @@ def run():
     active = False
     last_active_time = 0
 
-    # ---------- GRACEFUL SHUTDOWN ----------
-    def graceful_shutdown(message):
-        play_stop_sound()
-        print(f"{PINK}LANA:{RESET} {message}")
-        log_message("LANA", message)
-        speak(message)
-
-        words = len(message.split())
-        wait_time = max(3.0, words * 0.45)
-        time.sleep(wait_time)
-
-        raise SystemExit
-
     try:
         while True:
             response = None
@@ -61,18 +48,23 @@ def run():
 
             # -------- EXIT ANYTIME --------
             if any(word in text for word in ["exit", "bye", "goodbye", "quit"]):
-                graceful_shutdown(
-                    "Goodbye. Take care. You can call me anytime."
-                )
+                play_stop_sound()
+                response = "Goodbye. Shutting down."
+                print(f"{PINK}LANA:{RESET} {response}")
+                log_message("LANA", response)
+                speak(response)
+                break
 
             # -------- WAKE MODE --------
             if not active:
                 if any(w in text for w in WAKE_WORDS):
                     active = True
                     last_active_time = time.time()
+                    response = "Yes?"
                     print(f"{PINK}LANA:{RESET} Activated")
                     log_message("LANA", "Activated")
-                    speak("Yes?")
+                    speak(response)
+                    time.sleep(RECORD_DELAY)
                 continue
 
             # -------- AUTO SLEEP --------
@@ -133,9 +125,6 @@ def run():
             if intent == "get_time":
                 response = actions.get_time()
 
-            elif intent == "get_date":
-                response = actions.get_date()
-
             elif intent == "open_and_search":
                 response = actions.open_and_search(command)
 
@@ -186,6 +175,7 @@ def run():
             print(f"{PINK}LANA:{RESET} {response}")
             log_message("LANA", response)
             speak(response)
+            time.sleep(RECORD_DELAY)
             last_active_time = time.time()
 
     except KeyboardInterrupt:

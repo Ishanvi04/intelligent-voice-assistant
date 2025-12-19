@@ -4,7 +4,11 @@ import datetime
 import webbrowser
 import random
 import subprocess
+import datetime
 
+def get_date():
+    today = datetime.date.today()
+    return today.strftime("Today is %A, %B %d, %Y.")
 def get_battery():
     try:
         output = subprocess.check_output(
