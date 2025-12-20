@@ -20,7 +20,11 @@ RESET = "\033[0m"
 RED = "\033[91m"
 GREEN = "\033[92m"
 PINK = "\033[95m"
-
+# ---------- Safe Speaking Helper ----------
+def speak_and_wait(text):
+    speak(text)
+    # Wait long enough so mic doesn't hear Lana's own voice
+    time.sleep(max(1.5, len(text.split()) * 0.45))
 
 def run():
     print(f"{ASSISTANT_NAME.capitalize()} is running. Say '{ASSISTANT_NAME}' to wake me up.")
