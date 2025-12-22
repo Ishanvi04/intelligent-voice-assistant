@@ -1,5 +1,7 @@
 import time
+from history import add_to_history, get_full_history, get_last_command
 import context
+from history import add_to_history, get_full_history, get_last_command
 from diagnostics import run_diagnostics
 from logger import log_message
 from sounds import play_start_sound, play_stop_sound
@@ -136,6 +138,11 @@ def run():
             # ---- NORMAL INTENTS ----
             if intent == "get_time":
                 response = actions.get_time()
+            elif intent == "show_history":
+                response = get_full_history()
+
+            elif intent == "last_command":
+                response = get_last_command()
 
             elif intent == "get_date":
                 response = actions.get_date()
@@ -163,10 +170,18 @@ def run():
 
             elif intent == "greeting":
                 response = "Hello! How can I help you?"
+            elif intent == "help":
+                response = (
+                 "I can tell time and date, open websites, take notes, "
+                 "tell jokes and quotes, check battery, detect emotions, "
+                 "and run system diagnostics."
+          )
+
 
             elif intent == "diagnose":
                 response = "Running system diagnostics."
                 print(f"{PINK}LANA:{RESET} {response}")
+                add_to_history(command, response)
                 log_message("LANA", response)
                 speak(response)
 

@@ -11,9 +11,28 @@ KNOWN_SITES = {
 def detect_intent(text):
     text = text.lower().strip()
 
+    # ---------- COMMAND HISTORY ----------
+    if any(phrase in text for phrase in [
+        "command history",
+        "show history",
+        "what did i say",
+        "what did i say earlier"
+    ]):
+        return "show_history", None
+
+    if any(phrase in text for phrase in [
+        "last command",
+        "repeat last command"
+    ]):
+        return "last_command", None
+
     # ---------- SELF DIAGNOSTICS ----------
     if any(word in text for word in ["diagnose", "diagnostics", "check yourself"]):
         return "diagnose", None
+
+    if any(word in text for word in ["help", "what can you do", "commands"]):
+        return "help", None
+
 
     # ---------- MULTI-COMMAND ----------
     if "open" in text and "search" in text:
@@ -23,7 +42,7 @@ def detect_intent(text):
     if any(word in text for word in ["battery", "charge", "power level"]):
         return "get_battery", None
 
-    # ---------- DATE (CHECK FIRST) ----------
+    # ---------- DATE ----------
     if any(word in text for word in ["date", "today", "day"]):
         return "get_date", None
 
