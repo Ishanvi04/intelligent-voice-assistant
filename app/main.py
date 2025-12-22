@@ -1,6 +1,6 @@
 import time
-from history import add_to_history, get_full_history, get_last_command
 import context
+from memory import set_user_name, get_user_name
 from history import add_to_history, get_full_history, get_last_command
 from diagnostics import run_diagnostics
 from logger import log_message
@@ -22,11 +22,12 @@ RESET = "\033[0m"
 RED = "\033[91m"
 GREEN = "\033[92m"
 PINK = "\033[95m"
+
 # ---------- Safe Speaking Helper ----------
 def speak_and_wait(text):
     speak(text)
-    # Wait long enough so mic doesn't hear Lana's own voice
     time.sleep(max(1.5, len(text.split()) * 0.45))
+
 
 def run():
     print(f"{ASSISTANT_NAME.capitalize()} is running. Say '{ASSISTANT_NAME}' to wake me up.")
@@ -42,11 +43,7 @@ def run():
         print(f"{PINK}LANA:{RESET} {message}")
         log_message("LANA", message)
         speak(message)
-
-        words = len(message.split())
-        wait_time = max(3.0, words * 0.45)
-        time.sleep(wait_time)
-
+        time.sleep(max(3.0, len(message.split()) * 0.45))
         raise SystemExit
 
     try:
@@ -67,9 +64,7 @@ def run():
 
             # -------- EXIT ANYTIME --------
             if any(word in text for word in ["exit", "bye", "goodbye", "quit"]):
-                graceful_shutdown(
-                    "Goodbye. Take care. You can call me anytime."
-                )
+                graceful_shutdown("Goodbye. Take care. You can call me anytime.")
 
             # -------- WAKE MODE --------
             if not active:
@@ -109,7 +104,6 @@ def run():
                 context.pending_intent = "open_website"
                 response = "What would you like me to open?"
                 print(f"{PINK}LANA:{RESET} {response}")
-                log_message("LANA", response)
                 speak(response)
                 continue
 
@@ -117,7 +111,6 @@ def run():
                 context.pending_intent = "create_note"
                 response = "What should I write in the note?"
                 print(f"{PINK}LANA:{RESET} {response}")
-                log_message("LANA", response)
                 speak(response)
                 continue
 
@@ -130,7 +123,6 @@ def run():
 
                 context.reset()
                 print(f"{PINK}LANA:{RESET} {response}")
-                log_message("LANA", response)
                 speak(response)
                 last_active_time = time.time()
                 continue
@@ -138,11 +130,6 @@ def run():
             # ---- NORMAL INTENTS ----
             if intent == "get_time":
                 response = actions.get_time()
-            elif intent == "show_history":
-                response = get_full_history()
-
-            elif intent == "last_command":
-                response = get_last_command()
 
             elif intent == "get_date":
                 response = actions.get_date()
@@ -168,34 +155,43 @@ def run():
             elif intent == "assistant_name":
                 response = f"My name is {ASSISTANT_NAME.capitalize()}."
 
+            elif intent == "set_name":
+                set_user_name(params)
+                response = f"Nice to meet you, {params}."
+
+            elif intent == "get_name":
+                name = get_user_name()
+                response = f"Your name is {name}." if name else "I don't know your name yet."
+
+            elif intent == "show_history":
+                response = get_full_history()
+
+            elif intent == "last_command":
+                response = get_last_command()
+
             elif intent == "greeting":
                 response = "Hello! How can I help you?"
+
             elif intent == "help":
                 response = (
-                 "I can tell time and date, open websites, take notes, "
-                 "tell jokes and quotes, check battery, detect emotions, "
-                 "and run system diagnostics."
-          )
-
+                    "I can tell time and date, open websites, take notes, "
+                    "tell jokes and quotes, check battery, detect emotions, "
+                    "remember your name, show history, and run diagnostics."
+                )
 
             elif intent == "diagnose":
                 response = "Running system diagnostics."
                 print(f"{PINK}LANA:{RESET} {response}")
-                add_to_history(command, response)
-                log_message("LANA", response)
                 speak(response)
 
                 results, all_ok = run_diagnostics()
                 for msg in results:
                     print(f"{PINK}LANA:{RESET} {msg}")
-                    log_message("LANA", msg)
                     speak(msg)
 
                 final = "All systems are operational." if all_ok else "Some systems need attention."
                 print(f"{PINK}LANA:{RESET} {final}")
-                log_message("LANA", final)
                 speak(final)
-
                 last_active_time = time.time()
                 continue
 

@@ -1,19 +1,19 @@
 import simpleaudio as sa
 import os
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SOUND_DIR = os.path.join(BASE_DIR, "sounds")
+BASE_DIR = os.path.dirname(__file__)
+
+def _play(file):
+    try:
+        wave = sa.WaveObject.from_wave_file(file)
+        wave.play()
+    except Exception:
+        # Fail silently (never crash Lana)
+        pass
 
 def play_start_sound():
-    wave = sa.WaveObject.from_wave_file(
-        os.path.join(SOUND_DIR, "start.wav")
-    )
-    wave.play()
+    _play(os.path.join(BASE_DIR, "start.wav"))
 
 def play_stop_sound():
-    wave = sa.WaveObject.from_wave_file(
-        os.path.join(SOUND_DIR, "stop.wav")
-    )
-    wave.play()
-
+    _play(os.path.join(BASE_DIR, "stop.wav"))
 

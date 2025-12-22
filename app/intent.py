@@ -10,6 +10,14 @@ KNOWN_SITES = {
 
 def detect_intent(text):
     text = text.lower().strip()
+   
+    # ---------- NAME MEMORY ----------
+    if text.startswith("my name is"):
+        return "set_name", text.replace("my name is", "").strip()
+
+    if any(phrase in text for phrase in ["what is my name", "what's my name"]):
+        return "get_name", None
+
 
     # ---------- COMMAND HISTORY ----------
     if any(phrase in text for phrase in [
