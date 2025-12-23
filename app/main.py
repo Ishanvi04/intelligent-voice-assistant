@@ -1,3 +1,6 @@
+from timer import start_timer, cancel_timers
+from alarm import add_alarm, parse_time, cancel_alarms, start_alarm_thread
+from correction import suggest_correction
 import time
 import context
 from memory import set_user_name, get_user_name
@@ -86,6 +89,26 @@ def run():
             command = text.replace(ASSISTANT_NAME, "").strip()
             print(f"{GREEN}YOU:{RESET} {command}")
 
+            # -------- SPEECH CORRECTION --------
+            words = command.split()
+            for word in words:
+                suggestion = suggest_correction(word)
+                if suggestion and suggestion not in command:
+                    confirm = f"Did you mean {suggestion}?"
+                    print(f"{PINK}LANA:{RESET} {confirm}")
+                    speak(confirm)
+
+                    record_audio()
+                    answer = transcribe_audio().lower()
+
+                    if "yes" in answer:
+                        command = command.replace(word, suggestion)
+                        print(f"{PINK}LANA:{RESET} Okay, using {suggestion}.")
+                        speak(f"Okay, using {suggestion}.")
+                    else:
+                        print(f"{PINK}LANA:{RESET} Okay, ignoring it.")
+                        speak("Okay, ignoring it.")
+
             # -------- EMOTION DETECTION --------
             emotion = detect_emotion(command)
             if emotion:
@@ -134,8 +157,23 @@ def run():
             elif intent == "get_date":
                 response = actions.get_date()
 
+            elif intent == "cancel_alarm":
+                response = cancel_alarms()
+
             elif intent == "open_and_search":
                 response = actions.open_and_search(command)
+            elif intent == "set_timer":
+                import re
+
+                match = re.search(r"(\d+)\s*(second|seconds|minute|minutes)", command)
+                if match:
+                    value = int(match.group(1))
+                    unit = match.group(2)
+
+                    seconds = value * 60 if "minute" in unit else value
+                    response = start_timer(seconds)
+                else:
+                    response = "Please say something like: set a timer for 20 seconds."
 
             elif intent == "open_website":
                 response = actions.open_website(params[0])
@@ -158,6 +196,14 @@ def run():
             elif intent == "set_name":
                 set_user_name(params)
                 response = f"Nice to meet you, {params}."
+
+            elif intent == "set_alarm":
+                parsed = parse_time(command)
+                if parsed:
+                    hour, minute = parsed
+                    response = add_alarm(hour, minute)
+                else:
+                    response = "Please tell me the alarm time, like 6:30."
 
             elif intent == "get_name":
                 name = get_user_name()
