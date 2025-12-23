@@ -1,25 +1,26 @@
-import simpleaudio as sa
+from playsound import playsound
 import os
 
 BASE_DIR = os.path.dirname(__file__)
 
-def _play(file):
-    try:
-        wave = sa.WaveObject.from_wave_file(file)
-        wave.play()
-    except Exception:
-        # Fail silently (never crash Lana)
-        pass
-
 def play_start_sound():
-    _play(os.path.join(BASE_DIR, "start.wav"))
+    try:
+        playsound(os.path.join(BASE_DIR, "start.wav"))
+    except Exception as e:
+        print("[SOUND ERROR]", e)
 
 def play_stop_sound():
-    _play(os.path.join(BASE_DIR, "stop.wav"))
-def play_alarm_sound():
     try:
-        wave = sa.WaveObject.from_wave_file("app/sounds/alarm.wav")
-        wave.play()
-    except Exception:
-        print("⚠️ Alarm sound failed")
+        playsound(os.path.join(BASE_DIR, "stop.wav"))
+    except Exception as e:
+        print("[SOUND ERROR]", e)
+
+def play_alarm_sound():
+    """
+    Used by timer when time is up
+    """
+    try:
+        playsound(os.path.join(BASE_DIR, "stop.wav"))
+    except Exception as e:
+        print("[SOUND ERROR]", e)
 

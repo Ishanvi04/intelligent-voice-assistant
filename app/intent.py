@@ -13,6 +13,11 @@ def detect_intent(text):
     # ---------- TIMER ----------
     if "timer" in text or "alarm in" in text or "alarm for" in text:
         return "set_timer", None
+    if any(phrase in text for phrase in ["go to sleep", "sleep mode", "do not disturb"]):
+        return "sleep", None
+
+    if any(phrase in text for phrase in ["wake up", "i'm back", "resume"]):
+        return "wake", None
 
     # ---------- ALARM ----------
     if "cancel alarm" in text or "stop alarm" in text:
@@ -101,6 +106,20 @@ def detect_intent(text):
             match = re.search(rule, text)
             if match:
                 return intent, match.groups()
+    # ---------- TIMER ----------
+    match = re.search(r"set (a )?timer for (\d+)\s*(second|seconds|minute|minutes|hour|hours)", text)   
+    if match:
+        amount = int(match.group(2))
+        unit = match.group(3)
+
+        if "second" in unit:
+            seconds = amount
+        elif "minute" in unit:
+            seconds = amount * 60
+        elif "hour" in unit:
+            seconds = amount * 3600
+
+        return "set_timer", seconds
     
-    return "unknown", None
+        return "unknown", None
 

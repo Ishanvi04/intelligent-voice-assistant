@@ -1,3 +1,4 @@
+sleeping = False
 from timer import start_timer, cancel_timers
 from alarm import add_alarm, parse_time, cancel_alarms, start_alarm_thread
 from correction import suggest_correction
@@ -39,6 +40,7 @@ def run():
 
     active = False
     last_active_time = 0
+    sleeping = False
 
     # ---------- GRACEFUL SHUTDOWN ----------
     def graceful_shutdown(message):
@@ -61,9 +63,15 @@ def run():
             text = transcribe_audio().lower().strip()
             if not text:
                 continue
+            # 💤 SLEEP MODE CHECK
+            if sleeping and not any(w in text for w in WAKE_WORDS):
+                continue
 
             print(f"{RED}HEARD:{RESET} {text}")
             log_message("YOU", text)
+            # -------- SLEEP MODE FILTER --------
+            if sleeping and not any(w in text for w in WAKE_WORDS):
+                continue
 
             # -------- EXIT ANYTIME --------
             if any(word in text for word in ["exit", "bye", "goodbye", "quit"]):
@@ -136,6 +144,11 @@ def run():
                 print(f"{PINK}LANA:{RESET} {response}")
                 speak(response)
                 continue
+            if intent == "set_alarm" and not params:
+                context.pending_intent = "set_alarm"
+                response = "At what time should I set the alarm?"
+                speak(response)
+                continue
 
             # ---- HANDLE FOLLOW-UP ANSWER ----
             if context.pending_intent:
@@ -150,6 +163,18 @@ def run():
                 last_active_time = time.time()
                 continue
 
+            if context.pending_intent == "set_alarm":
+                parsed = parse_time(command)
+                if parsed:
+                    hour, minute = parsed
+                    response = add_alarm(hour, minute)
+                    context.reset()
+                else:
+                    response = "I didn’t catch the time. Please say something like 6:30."
+                speak(response)
+                continue
+
+
             # ---- NORMAL INTENTS ----
             if intent == "get_time":
                 response = actions.get_time()
@@ -159,6 +184,18 @@ def run():
 
             elif intent == "cancel_alarm":
                 response = cancel_alarms()
+            elif intent == "sleep":
+                 sleeping = True
+                 response = "Okay. I’ll stay quiet until you wake me."
+                 speak(response)
+                 continue
+
+            elif intent == "wake":
+                 sleeping = False
+                 response = "I’m awake now."
+                 speak(response)
+                 continue
+
 
             elif intent == "open_and_search":
                 response = actions.open_and_search(command)
@@ -189,6 +226,8 @@ def run():
 
             elif intent == "tell_quote":
                 response = actions.tell_quote()
+            elif intent == "set_timer":
+                response = actions.set_timer(params, speak)
 
             elif intent == "assistant_name":
                 response = f"My name is {ASSISTANT_NAME.capitalize()}."

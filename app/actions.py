@@ -5,6 +5,23 @@ import webbrowser
 import random
 import subprocess
 import datetime
+import threading
+import time
+
+def set_timer(seconds, speak):
+    def timer_thread():
+        time.sleep(seconds)
+        speak("Time is up.")
+
+    t = threading.Thread(target=timer_thread, daemon=True)
+    t.start()
+
+    if seconds < 60:
+        return f"Timer set for {seconds} seconds."
+    elif seconds < 3600:
+        return f"Timer set for {seconds // 60} minutes."
+    else:
+        return f"Timer set for {seconds // 3600} hours."
 
 def get_date():
     today = datetime.date.today()
