@@ -1,25 +1,12 @@
-import pyttsx3
-
-engine = pyttsx3.init()
-
-# Get available voices
-voices = engine.getProperty("voices")
-
-# Try to select a female voice
-female_voice = None
-for voice in voices:
-    if "female" in voice.name.lower() or "samantha" in voice.name.lower():
-        female_voice = voice.id
-        break
-
-# Fallback
-engine.setProperty("voice", female_voice if female_voice else voices[0].id)
-
-# Tune voice
-engine.setProperty("rate", 170)
-engine.setProperty("volume", 1.0)
+import subprocess
 
 def speak(text):
-    engine.say(text)
-    engine.runAndWait()
+    try:
+        subprocess.Popen(
+            ["say", "-v", "Samantha", "-r", "170", text],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+    except Exception as e:
+        print("[TTS ERROR]", e)
 
