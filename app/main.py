@@ -1,296 +1,162 @@
-sleeping = False
-from timer import start_timer, cancel_timers
-from alarm import add_alarm, parse_time, cancel_alarms, start_alarm_thread
-from correction import suggest_correction
+from app.tts import is_speaking, speak
+from app.goal import goal, start_goal
+from app.timer import start_timer
+from app.alarm import add_alarm, parse_time, cancel_alarms, start_alarm_thread
+from app.correction import suggest_correction
 import time
-import context
-from memory import set_user_name, get_user_name
-from history import add_to_history, get_full_history, get_last_command
-from diagnostics import run_diagnostics
-from logger import log_message
-from sounds import play_start_sound, play_stop_sound
-from emotion import detect_emotion, get_emotion_response
-from recorder import record_audio
-from asr import transcribe_audio
-from intent import detect_intent
-import actions
-from tts import speak
+from app.memory import set_user_name, get_user_name
+from app.logger import log_message
+from app.sounds import play_start_sound, play_stop_sound
+from app.emotion import detect_emotion, get_emotion_response
+from app.recorder import record_audio
+from app.asr import transcribe_audio
+from app.intent import detect_intent
+import app.actions as actions
+from app.llm import ask_llm
 
 ASSISTANT_NAME = "lana"
-WAKE_WORDS = ["lana", "laana", "lanna", "lanaah"]
-ACTIVE_TIMEOUT = 20
-RECORD_DELAY = 1.0
+WAKE_WORDS = ["lana", "hey lana", "laana", "lanna"]
+ACTIVE_TIMEOUT = 25
+RECORD_DELAY = 0.5
 
-# ---------- Terminal Colors ----------
-RESET = "\033[0m"
-RED = "\033[91m"
-GREEN = "\033[92m"
-PINK = "\033[95m"
-
-# ---------- Safe Speaking Helper ----------
-def speak_and_wait(text):
-    speak(text)
-    time.sleep(max(1.5, len(text.split()) * 0.45))
+active = False
+last_active_time = 0
+sleeping = False
 
 
+# ==========================================================
+# 🔁 ONE COMPLETE VOICE INTERACTION (USED BY API + UI)
+# ==========================================================
+def handle_voice_interaction():
+    global active, last_active_time, sleeping
+
+    # 🔇 Wait if Lana is speaking
+    while is_speaking:
+        time.sleep(0.05)
+
+    time.sleep(0.2)
+
+    # 🎙 Record
+    play_start_sound()
+    record_audio()
+    text = transcribe_audio().lower().strip()
+
+    if not text:
+        return {"status": "no_input"}
+
+    print(f"HEARD: {text}")
+    log_message("YOU", text)
+
+    # ❌ Exit
+    if any(w in text for w in ["bye", "goodbye"]):
+        speak("Okay. I'm here if you need me.")
+        active = False
+        continue
+
+    # 😴 Sleep mode
+    if sleeping and not any(w in text for w in WAKE_WORDS):
+        return {"status": "sleeping"}
+
+    # 🟣 Wake word
+    if not active:
+        if any(w in text for w in WAKE_WORDS):
+            active = True
+            last_active_time = time.time()
+            speak("Yes?")
+            return {"status": "awake"}
+        return {"status": "idle"}
+
+    # ⏱ Auto sleep
+    if time.time() - last_active_time > ACTIVE_TIMEOUT:
+        active = False
+        return {"status": "timeout"}
+
+    command = text.replace(ASSISTANT_NAME, "").strip()
+    print(f"YOU: {command}")
+
+    intent, params = detect_intent(command)
+
+    # 🎯 GOALS
+    if intent == "goal_relax":
+        start_goal("relax", [
+            ("open_website", "youtube.com"),
+            ("open_and_search", "lo-fi chill music"),
+        ])
+        speak("Okay. I’ll help you relax.")
+        return {"status": "goal"}
+
+    if intent == "goal_study":
+        start_goal("study", [
+            ("open_website", "google.com"),
+            ("open_and_search", "pomodoro timer"),
+            ("open_and_search", "focus music"),
+        ])
+        speak("Alright. Let’s get you ready to study.")
+        return {"status": "goal"}
+
+    # ⏲ Timers / actions
+    if intent == "set_timer" and isinstance(params, int):
+        response = start_timer(params)
+
+    elif intent == "sleep":
+        sleeping = True
+        response = "Okay. I’ll stay quiet."
+
+    elif intent == "wake":
+        sleeping = False
+        response = "I’m awake."
+
+    elif intent == "get_time":
+        response = actions.get_time()
+
+    elif intent == "get_date":
+        response = actions.get_date()
+
+    elif intent == "open_website" and params:
+        response = actions.open_website(params[0])
+
+    elif intent == "open_and_search":
+        response = actions.open_and_search(command)
+
+    elif intent == "assistant_name":
+        response = "My name is Lana."
+
+    elif intent == "set_name":
+        set_user_name(params)
+        response = f"Nice to meet you, {params}."
+
+    elif intent == "get_name":
+        name = get_user_name()
+        response = f"Your name is {name}." if name else "I don't know your name yet."
+
+    elif intent == "tell_joke":
+        response = actions.tell_joke()
+
+    elif intent == "tell_quote":
+        response = actions.tell_quote()
+
+    else:
+        # 🤖 LLM fallback
+        response = ask_llm(command)
+
+    speak(response)
+    last_active_time = time.time()
+
+    return {"status": "responded", "response": response}
+
+
+# ==========================================================
+# 🖥 TERMINAL MODE (UNCHANGED BEHAVIOR)
+# ==========================================================
 def run():
-    print(f"{ASSISTANT_NAME.capitalize()} is running. Say '{ASSISTANT_NAME}' to wake me up.")
-    speak(f"Say {ASSISTANT_NAME} to wake me up.")
-    time.sleep(1)
-
-    active = False
-    last_active_time = 0
-    sleeping = False
-
-    # ---------- GRACEFUL SHUTDOWN ----------
-    def graceful_shutdown(message):
-        play_stop_sound()
-        print(f"{PINK}LANA:{RESET} {message}")
-        log_message("LANA", message)
-        speak(message)
-        time.sleep(max(3.0, len(message.split()) * 0.45))
-        raise SystemExit
+    print("Lana is running. Say 'lana' to wake me up.")
+    speak("Say lana to wake me up.")
 
     try:
         while True:
-            response = None
-
-            # -------- PASSIVE LISTENING --------
+            handle_voice_interaction()
             time.sleep(RECORD_DELAY)
-            play_start_sound()
-            record_audio()
-
-            text = transcribe_audio().lower().strip()
-            if not text:
-                continue
-            # 💤 SLEEP MODE CHECK
-            if sleeping and not any(w in text for w in WAKE_WORDS):
-                continue
-
-            print(f"{RED}HEARD:{RESET} {text}")
-            log_message("YOU", text)
-            # -------- SLEEP MODE FILTER --------
-            if sleeping and not any(w in text for w in WAKE_WORDS):
-                continue
-
-            # -------- EXIT ANYTIME --------
-            if any(word in text for word in ["exit", "bye", "goodbye", "quit"]):
-                graceful_shutdown("Goodbye. Take care. You can call me anytime.")
-
-            # -------- WAKE MODE --------
-            if not active:
-                if any(w in text for w in WAKE_WORDS):
-                    active = True
-                    last_active_time = time.time()
-                    print(f"{PINK}LANA:{RESET} Activated")
-                    log_message("LANA", "Activated")
-                    speak("Yes?")
-                continue
-
-            # -------- AUTO SLEEP --------
-            if time.time() - last_active_time > ACTIVE_TIMEOUT:
-                active = False
-                log_message("SYSTEM", "Going to sleep")
-                continue
-
-            # -------- COMMAND MODE --------
-            command = text.replace(ASSISTANT_NAME, "").strip()
-            print(f"{GREEN}YOU:{RESET} {command}")
-
-            # -------- SPEECH CORRECTION --------
-            words = command.split()
-            for word in words:
-                suggestion = suggest_correction(word)
-                if suggestion and suggestion not in command:
-                    confirm = f"Did you mean {suggestion}?"
-                    print(f"{PINK}LANA:{RESET} {confirm}")
-                    speak(confirm)
-
-                    record_audio()
-                    answer = transcribe_audio().lower()
-
-                    if "yes" in answer:
-                        command = command.replace(word, suggestion)
-                        print(f"{PINK}LANA:{RESET} Okay, using {suggestion}.")
-                        speak(f"Okay, using {suggestion}.")
-                    else:
-                        print(f"{PINK}LANA:{RESET} Okay, ignoring it.")
-                        speak("Okay, ignoring it.")
-
-            # -------- EMOTION DETECTION --------
-            emotion = detect_emotion(command)
-            if emotion:
-                response = get_emotion_response(emotion)
-                print(f"{PINK}LANA:{RESET} {response}")
-                log_message("LANA", response)
-                speak(response)
-                last_active_time = time.time()
-                continue
-
-            # -------- INTENT DETECTION --------
-            intent, params = detect_intent(command)
-
-            # ---- FOLLOW-UP QUESTIONS ----
-            if intent == "open_website" and not params:
-                context.pending_intent = "open_website"
-                response = "What would you like me to open?"
-                print(f"{PINK}LANA:{RESET} {response}")
-                speak(response)
-                continue
-
-            if intent == "create_note" and not params:
-                context.pending_intent = "create_note"
-                response = "What should I write in the note?"
-                print(f"{PINK}LANA:{RESET} {response}")
-                speak(response)
-                continue
-            if intent == "set_alarm" and not params:
-                context.pending_intent = "set_alarm"
-                response = "At what time should I set the alarm?"
-                speak(response)
-                continue
-
-            # ---- HANDLE FOLLOW-UP ANSWER ----
-            if context.pending_intent:
-                if context.pending_intent == "open_website":
-                    response = actions.open_website(command)
-                elif context.pending_intent == "create_note":
-                    response = actions.create_note(command)
-
-                context.reset()
-                print(f"{PINK}LANA:{RESET} {response}")
-                speak(response)
-                last_active_time = time.time()
-                continue
-
-            if context.pending_intent == "set_alarm":
-                parsed = parse_time(command)
-                if parsed:
-                    hour, minute = parsed
-                    response = add_alarm(hour, minute)
-                    context.reset()
-                else:
-                    response = "I didn’t catch the time. Please say something like 6:30."
-                speak(response)
-                continue
-
-
-            # ---- NORMAL INTENTS ----
-            if intent == "get_time":
-                response = actions.get_time()
-
-            elif intent == "get_date":
-                response = actions.get_date()
-
-            elif intent == "cancel_alarm":
-                response = cancel_alarms()
-            elif intent == "sleep":
-                 sleeping = True
-                 response = "Okay. I’ll stay quiet until you wake me."
-                 speak(response)
-                 continue
-
-            elif intent == "wake":
-                 sleeping = False
-                 response = "I’m awake now."
-                 speak(response)
-                 continue
-
-
-            elif intent == "open_and_search":
-                response = actions.open_and_search(command)
-            elif intent == "set_timer":
-                import re
-
-                match = re.search(r"(\d+)\s*(second|seconds|minute|minutes)", command)
-                if match:
-                    value = int(match.group(1))
-                    unit = match.group(2)
-
-                    seconds = value * 60 if "minute" in unit else value
-                    response = start_timer(seconds)
-                else:
-                    response = "Please say something like: set a timer for 20 seconds."
-
-            elif intent == "open_website":
-                response = actions.open_website(params[0])
-
-            elif intent == "create_note":
-                response = actions.create_note(params[0])
-
-            elif intent == "get_battery":
-                response = actions.get_battery()
-
-            elif intent == "tell_joke":
-                response = actions.tell_joke()
-
-            elif intent == "tell_quote":
-                response = actions.tell_quote()
-            elif intent == "set_timer":
-                response = actions.set_timer(params, speak)
-
-            elif intent == "assistant_name":
-                response = f"My name is {ASSISTANT_NAME.capitalize()}."
-
-            elif intent == "set_name":
-                set_user_name(params)
-                response = f"Nice to meet you, {params}."
-
-            elif intent == "set_alarm":
-                parsed = parse_time(command)
-                if parsed:
-                    hour, minute = parsed
-                    response = add_alarm(hour, minute)
-                else:
-                    response = "Please tell me the alarm time, like 6:30."
-
-            elif intent == "get_name":
-                name = get_user_name()
-                response = f"Your name is {name}." if name else "I don't know your name yet."
-
-            elif intent == "show_history":
-                response = get_full_history()
-
-            elif intent == "last_command":
-                response = get_last_command()
-
-            elif intent == "greeting":
-                response = "Hello! How can I help you?"
-
-            elif intent == "help":
-                response = (
-                    "I can tell time and date, open websites, take notes, "
-                    "tell jokes and quotes, check battery, detect emotions, "
-                    "remember your name, show history, and run diagnostics."
-                )
-
-            elif intent == "diagnose":
-                response = "Running system diagnostics."
-                print(f"{PINK}LANA:{RESET} {response}")
-                speak(response)
-
-                results, all_ok = run_diagnostics()
-                for msg in results:
-                    print(f"{PINK}LANA:{RESET} {msg}")
-                    speak(msg)
-
-                final = "All systems are operational." if all_ok else "Some systems need attention."
-                print(f"{PINK}LANA:{RESET} {final}")
-                speak(final)
-                last_active_time = time.time()
-                continue
-
-            else:
-                response = "Sorry, I didn't understand that."
-
-            print(f"{PINK}LANA:{RESET} {response}")
-            log_message("LANA", response)
-            speak(response)
-            last_active_time = time.time()
-
     except KeyboardInterrupt:
-        play_stop_sound()
-        print("\nAssistant stopped manually.")
         speak("Goodbye.")
 
 
