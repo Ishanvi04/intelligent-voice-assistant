@@ -1,0 +1,67 @@
+INFO:     Started server process [2327]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+Lana is running. Say 'lana' to wake me up.
+INFO:     127.0.0.1:50217 - "POST /start HTTP/1.1" 200 OK
+Recording for 5 seconds...
+Saved recording to samples/output.wav
+HEARD: bye.
+Recording for 5 seconds...
+INFO:     127.0.0.1:50219 - "POST /wake HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50220 - "POST /wake HTTP/1.1" 404 Not Found
+Saved recording to samples/output.wav
+HEARD: i pronounce them as good as i can
+Recording for 5 seconds...
+Saved recording to samples/output.wav
+Recording for 5 seconds...
+Saved recording to samples/output.wav
+Recording for 5 seconds...
+Saved recording to samples/output.wav
+Recording for 5 seconds...
+Saved recording to samples/output.wav
+HEARD: kol目前. kol
+INFO:     127.0.0.1:50223 - "POST /wake HTTP/1.1" 404 Not Found
+Recording for 5 seconds...
+Saved recording to samples/output.wav
+HEARD: lana
+Recording for 5 seconds...
+Saved recording to samples/output.wav
+HEARD: tell me a joke.
+YOU: tell me a joke.
+Recording for 5 seconds...
+Saved recording to samples/output.wav
+HEARD: tell me about black hole in short.
+YOU: tell me about black hole in short.
+INFO:     127.0.0.1:50236 - "POST /wake HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50237 - "POST /wake HTTP/1.1" 404 Not Found
+||PaMacCore (AUHAL)|| Warning on line 521: err=''!obj'', msg=Unknown Error
+||PaMacCore (AUHAL)|| Warning on line 441: err=''!obj'', msg=Unknown Error
+||PaMacCore (AUHAL)|| Error on line 1322: err='-10851', msg=Audio Unit: Invalid Property Value
+Recording for 5 seconds...
+[MIC ERROR] Error opening InputStream: Internal PortAudio error [PaErrorCode -9986]
+HEARD: tell me about black hole in short.
+YOU: tell me about black hole in short.
+INFO:     127.0.0.1:50241 - "POST /wake HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50242 - "POST /wake HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50244 - "POST /wake HTTP/1.1" 404 Not Found
+||PaMacCore (AUHAL)|| Warning on line 521: err=''!obj'', msg=Unknown Error
+||PaMacCore (AUHAL)|| Warning on line 441: err=''!obj'', msg=Unknown Error
+||PaMacCore (AUHAL)|| Error on line 1322: err='-10851', msg=Audio Unit: Invalid Property Value
+Recording for 5 seconds...
+[MIC ERROR] Error opening InputStream: Internal PortAudio error [PaErrorCode -9986]
+HEARD: tell me about black hole in short.
+YOU: tell me about black hole in short.
+INFO:     127.0.0.1:50254 - "POST /wake HTTP/1.1" 404 Not Found
+||PaMacCore (AUHAL)|| Warning on line 521: err=''!obj'', msg=Unknown Error
+||PaMacCore (AUHAL)|| Warning on line 441: err=''!obj'', msg=Unknown Error
+||PaMacCore (AUHAL)|| Error on line 1322: err='-10851', msg=Audio Unit: Invalid Property Value
+||PaMacCore (AUHAL)|| Warning on line 521: err=''!obj'', msg=Unknown Error
+||PaMacCore (AUHAL)|| Warning on line 441: err=''!obj'', msg=Unknown Error
+||PaMacCore (AUHAL)|| Error on line 1322: err='-10851', msg=Audio Unit: Invalid Property Value
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [2327]
+/opt/miniconda3/envs/ds_env/lib/python3.10/multiprocessing/resource_tracker.py:224: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '

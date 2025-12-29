@@ -1,12 +1,20 @@
 import subprocess
+import time
 
-def speak(text):
+is_speaking = False
+
+def speak(text: str):
+    global is_speaking
+    if not text:
+        return
+
+    is_speaking = True
     try:
-        subprocess.Popen(
+        subprocess.run(
             ["say", "-v", "Samantha", "-r", "170", text],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL
+            check=False
         )
-    except Exception as e:
-        print("[TTS ERROR]", e)
+    finally:
+        time.sleep(0.4)
+        is_speaking = False
 

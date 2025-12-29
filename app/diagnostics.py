@@ -1,9 +1,9 @@
 import sounddevice as sd
 import numpy as np
 import socket
-from asr import transcribe_audio
-from recorder import record_audio
-from tts import speak
+from app.asr import transcribe_audio
+from app.recorder import record_audio
+from app.tts import speak
 
 
 def check_microphone():

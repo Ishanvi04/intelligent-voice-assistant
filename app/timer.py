@@ -1,21 +1,42 @@
-import time
 import threading
-from sounds import play_alarm_sound
+import time
+from app.sounds import play_alarm_sound
+from app.tts import speak
 
-active_timers = []
+_active_timers = []
+
+def timer_thread(seconds):
+    if seconds is None:
+        return
+    try:
+        seconds = int(seconds)
+    except Exception:
+        return
+
+    time.sleep(seconds)
+    play_alarm_sound()
+    speak("Time is up.")
 
 def start_timer(seconds):
-    def timer_thread():
-        time.sleep(seconds)
-        play_alarm_sound()
+    if seconds is None:
+        return "I couldn't understand the timer duration."
 
-    t = threading.Thread(target=timer_thread, daemon=True)
-    t.start()
-    active_timers.append(t)
+    try:
+        seconds = int(seconds)
+    except Exception:
+        return "Please say the timer duration clearly."
 
+    thread = threading.Thread(
+        target=timer_thread,
+        args=(seconds,),
+        daemon=True
+    )
+    thread.start()
+
+    _active_timers.append(thread)
     return f"Timer set for {seconds} seconds."
 
 def cancel_timers():
-    active_timers.clear()
+    _active_timers.clear()
     return "All timers cancelled."
 
