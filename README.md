@@ -1,4 +1,15 @@
-Lana – Intelligent Voice Assistant
+# Lana — Intelligent Voice Assistant 🎙️
+
+## ▶️ Run Locally in 30 Seconds
+
+```bash
+git clone https://github.com/Ishanvi04/intelligent-voice-assistant.git
+cd intelligent-voice-assistant
+pip install -r requirements.txt
+python run_lana.py
+```
+
+
 Overview
 
 Lana is a Python-based voice assistant that listens for a wake word, understands spoken commands, executes actions, and responds using speech.
